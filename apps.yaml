@@ -1,0 +1,16 @@
+# ROFL Apps Registry
+# List of ROFL applications to track and verify
+
+apps:
+  - url: "https://github.com/talos-agent/talos"
+    ref: "main"
+  - url: "https://github.com/oasisprotocol/wt3"
+    ref: "master"
+  - url: "https://github.com/ptrus/verisage.xyz"
+    ref: "master"
+  - url: "https://github.com/oasisprotocol/rofl-x402-service"
+    ref: "master"
+  - url: "https://github.com/oasisprotocol/rofl-solana-example"
+    ref: "master"
+  - url: "https://github.com/ptrus/roflios"
+    ref: "master"

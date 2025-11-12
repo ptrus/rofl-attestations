@@ -1,0 +1,28 @@
+# ROFL App Registry Configuration
+# Copy this file to config.yaml and customize for your environment
+
+server:
+  listen_addr: ":8000"
+
+db:
+  path: "rofl-registry.db"
+
+debug: false
+
+worker:
+  enabled: true
+  backend_url: "http://localhost:8899"
+  app_interval: 1
+  poll_interval: 5
+  poll_timeout: 5
+
+  # Authentication with rofl-app-backend (SIWE)
+  # Pass private_key via env: ROFL_REGISTRY_WORKER.PRIVATE_KEY=your-hex-key
+  private_key: ""
+  siwe_domain: "localhost"
+  chain_id: 0x5aff  # 0x5aff=testnet, 0x5afe=mainnet
+
+apps:
+  # Apps registry URL - fetches list of apps to track from GitHub
+  # Default: https://raw.githubusercontent.com/ptrus/rofl-attestations/master/apps.yaml
+  # registry_url: "https://raw.githubusercontent.com/ptrus/rofl-attestations/master/apps.yaml"

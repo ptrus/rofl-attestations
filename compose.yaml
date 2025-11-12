@@ -1,0 +1,33 @@
+services:
+  rofl-registry:
+    image: ptrusr/rofl-attestations:latest
+    container_name: rofl-registry
+    volumes:
+      - ./config.yaml:/app/config.yaml:ro
+      - ./data:/data
+    restart: unless-stopped
+    networks:
+      - rofl-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared-tunnel
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN:?CLOUDFLARE_TUNNEL_TOKEN must be set}
+    depends_on:
+      rofl-registry:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - rofl-network
+
+networks:
+  rofl-network:
+    driver: bridge

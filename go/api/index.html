@@ -1,0 +1,405 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ROFL Attestations - Verified TEE Applications</title>
+    <script src="https://unpkg.com/htmx.org@2.0.8"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                        },
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 min-h-screen">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Header -->
+        <header class="mb-12 bg-gradient-to-br from-blue-50 via-slate-50 to-purple-50 rounded-2xl p-8 border border-slate-200 shadow-sm">
+            <div class="flex items-center justify-between mb-8">
+                <div>
+                    <div class="flex items-center gap-3 mb-2">
+                        <div class="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-blue-600 to-purple-600 rounded-xl flex items-center justify-center shadow-md">
+                            <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                            </svg>
+                        </div>
+                        <h1 class="text-4xl font-bold text-slate-900">
+                            Verified ROFL Applications
+                        </h1>
+                    </div>
+                    <p class="text-slate-600 text-lg max-w-3xl mb-3">
+                        Continuously attested Sapphire TEE deployments on the Oasis Network. We rebuild each submitted app from source, compare enclave measurements to what's running on-chain, and publish the results so operators can trust what they run.
+                    </p>
+                    <div class="flex flex-wrap gap-4 text-sm text-slate-600">
+                        <span class="flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                            Reproducible builds
+                        </span>
+                        <span class="flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+                            </svg>
+                            Continuous attestations
+                        </span>
+                        <span class="flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+                            </svg>
+                            Explorer-deep links
+                        </span>
+                    </div>
+                </div>
+                <a href="https://github.com/ptrus/rofl-attestations"
+                   target="_blank"
+                   class="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-semibold text-sm transition-colors shadow-sm">
+                    Submit App on GitHub →
+                </a>
+            </div>
+
+            <!-- Stats Bar -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="bg-white border border-slate-200 rounded-lg px-6 py-5 shadow-sm">
+                    <div class="text-3xl font-bold text-slate-900" id="total-apps">-</div>
+                    <div class="text-slate-600 text-sm mt-1 font-medium">Total Applications</div>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-lg px-6 py-5 shadow-sm">
+                    <div class="text-3xl font-bold text-emerald-600" id="verified-apps">-</div>
+                    <div class="text-slate-600 text-sm mt-1 font-medium">Verified</div>
+                </div>
+                <div class="bg-white border border-slate-200 rounded-lg px-6 py-5 shadow-sm">
+                    <div class="text-3xl font-bold text-blue-600" id="deployments">-</div>
+                    <div class="text-slate-600 text-sm mt-1 font-medium">Active Deployments</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Manual Verification Info -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+            <div class="flex items-start gap-4">
+                <div class="flex-shrink-0 text-blue-600 text-2xl">
+                    ℹ️
+                </div>
+                <div class="flex-1">
+                    <div class="flex justify-between items-start">
+                        <h3 class="text-lg font-bold text-slate-900 mb-2">Manual Verification</h3>
+                        <button onclick="toggleManualVerification()" id="manual-verify-toggle" class="text-blue-600 hover:text-blue-800 text-sm font-semibold">
+                            Show details
+                        </button>
+                    </div>
+                    <p class="text-slate-700 leading-relaxed">
+                        This registry shows automated verification results for ROFL applications. However, <strong>you can and should manually verify applications yourself</strong> before trusting them.
+                    </p>
+                    <div id="manual-verification-details" class="hidden mt-4">
+                        <p class="text-slate-700 leading-relaxed mb-3">
+                            Before trusting an application, run these checks yourself:
+                        </p>
+                        <ol class="list-decimal list-inside space-y-2 text-slate-700 leading-relaxed mb-3">
+                            <li>Clone the repo at the listed commit, inspect the changes, and confirm dependencies.</li>
+                            <li>Build locally with the command below (requires oasis-cli ≥ v0.17.0).</li>
+                            <li>Compare the printed enclave IDs with the explorer entry linked in the app details.</li>
+                        </ol>
+                        <div class="bg-slate-900 rounded-md p-3 mb-3">
+                            <code class="text-slate-100 text-sm font-mono">oasis rofl build --validate --deployment &lt;deployment_name&gt;</code>
+                        </div>
+                        <p class="text-slate-700 leading-relaxed text-sm">
+                            Install <a href="https://github.com/oasisprotocol/cli" target="_blank" class="text-blue-600 hover:text-blue-800 underline font-semibold">oasis-cli</a> to use this command. The printed enclave measurements should match those on the Oasis Explorer.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Developer Notice -->
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-8">
+            <div class="flex items-start gap-4">
+                <div class="flex-shrink-0 text-blue-600 text-2xl">
+                    ℹ️
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-lg font-bold text-slate-900 mb-2">For App Developers</h3>
+                    <p class="text-slate-700 leading-relaxed">
+                        ROFL verification covers apps compiled with <a href="https://github.com/oasisprotocol/cli/releases" target="_blank" class="text-blue-600 hover:text-blue-800 underline font-semibold">oasis-cli</a> v0.17.0 or newer. Upgrade before submitting to ensure the registry can attest your deployments end-to-end.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="bg-white border border-slate-200 rounded-lg p-6 mb-8 shadow-sm">
+            <div class="flex flex-wrap gap-6 mb-4">
+                <div class="flex flex-wrap items-center gap-2">
+                    <label class="text-slate-700 font-semibold text-sm">Status:</label>
+                    <button class="filter-btn px-4 py-2 rounded-lg text-sm font-medium transition-all bg-slate-900 text-white" data-filter-type="status" data-filter-value="all" title="Show all applications">All</button>
+                    <button class="filter-btn px-4 py-2 rounded-lg text-sm font-medium transition-all bg-slate-100 text-slate-700 hover:bg-slate-200" data-filter-type="status" data-filter-value="verified" title="Enclave measurements match on-chain deployments">Verified</button>
+                    <button class="filter-btn px-4 py-2 rounded-lg text-sm font-medium transition-all bg-slate-100 text-slate-700 hover:bg-slate-200" data-filter-type="status" data-filter-value="pending" title="Verification queued or in progress">Pending</button>
+                    <button class="filter-btn px-4 py-2 rounded-lg text-sm font-medium transition-all bg-slate-100 text-slate-700 hover:bg-slate-200" data-filter-type="status" data-filter-value="failed" title="Verification failed or measurements don't match">Failed</button>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <label class="text-slate-700 font-semibold text-sm">Network:</label>
+                    <button class="filter-btn px-4 py-2 rounded-lg text-sm font-medium transition-all bg-slate-900 text-white" data-filter-type="network" data-filter-value="all">All</button>
+                    <button class="filter-btn px-4 py-2 rounded-lg text-sm font-medium transition-all bg-slate-100 text-slate-700 hover:bg-slate-200" data-filter-type="network" data-filter-value="mainnet">Mainnet</button>
+                    <button class="filter-btn px-4 py-2 rounded-lg text-sm font-medium transition-all bg-slate-100 text-slate-700 hover:bg-slate-200" data-filter-type="network" data-filter-value="testnet">Testnet</button>
+                </div>
+            </div>
+            <div class="flex flex-wrap gap-4 items-center">
+                <input type="text"
+                       placeholder="Search applications..."
+                       id="search-input"
+                       class="flex-1 min-w-[250px] px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all">
+            </div>
+        </div>
+
+        <!-- Apps Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start"
+             id="apps-container"
+             hx-get="/htmx/apps"
+             hx-trigger="load"
+             hx-swap="innerHTML">
+            <div class="col-span-full text-center py-12 text-slate-500">
+                <div class="animate-pulse">Loading applications...</div>
+            </div>
+        </div>
+
+        <!-- Empty State (when no results) -->
+        <div id="empty-state" class="hidden col-span-full text-center py-16">
+            <svg class="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <h3 class="text-lg font-semibold text-slate-700 mb-2">No applications found</h3>
+            <p class="text-slate-500 text-sm mb-4">Try adjusting your filters or search query</p>
+            <button onclick="resetFilters()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-semibold text-sm transition-colors">
+                Reset Filters
+            </button>
+        </div>
+    </div>
+
+    <!-- Modal -->
+    <div id="app-modal" class="hidden fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20">
+            <!-- Backdrop -->
+            <div class="fixed inset-0 bg-slate-900 bg-opacity-75 transition-opacity" onclick="closeModal()"></div>
+
+            <!-- Modal Content -->
+            <div class="relative bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto p-8">
+                <!-- Close Button -->
+                <button onclick="closeModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600 transition-colors">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+
+                <!-- Modal Body -->
+                <div id="modal-body"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Filter functionality
+        const filters = {
+            status: 'all',
+            network: 'all',
+            search: ''
+        };
+
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const filterType = this.dataset.filterType;
+                const filterValue = this.dataset.filterValue;
+
+                // Update active state
+                const group = this.closest('div').querySelectorAll(`[data-filter-type="${filterType}"]`);
+                group.forEach(b => {
+                    b.classList.remove('bg-slate-900', 'text-white');
+                    b.classList.add('bg-slate-100', 'text-slate-700');
+                });
+                this.classList.remove('bg-slate-100', 'text-slate-700');
+                this.classList.add('bg-slate-900', 'text-white');
+
+                // Update filter
+                filters[filterType] = filterValue;
+                applyFilters();
+            });
+        });
+
+        document.getElementById('search-input').addEventListener('input', function(e) {
+            filters.search = e.target.value.toLowerCase();
+            applyFilters();
+        });
+
+        function applyFilters() {
+            const cards = document.querySelectorAll('.app-card');
+            const emptyState = document.getElementById('empty-state');
+            let visibleCount = 0;
+
+            cards.forEach(card => {
+                const status = card.dataset.status;
+                const networks = card.dataset.networks ? card.dataset.networks.split(',') : [];
+                const name = card.dataset.name ? card.dataset.name.toLowerCase() : '';
+
+                let show = true;
+
+                if (filters.status !== 'all' && status !== filters.status) {
+                    show = false;
+                }
+
+                if (filters.network !== 'all' && !networks.includes(filters.network)) {
+                    show = false;
+                }
+
+                if (filters.search && !name.includes(filters.search)) {
+                    show = false;
+                }
+
+                card.style.display = show ? 'block' : 'none';
+                if (show) visibleCount++;
+            });
+
+            // Show empty state if no cards are visible
+            if (emptyState) {
+                emptyState.style.display = visibleCount === 0 ? 'block' : 'none';
+            }
+        }
+
+        function resetFilters() {
+            // Reset filter state
+            filters.status = 'all';
+            filters.network = 'all';
+            filters.search = '';
+
+            // Reset UI
+            document.getElementById('search-input').value = '';
+
+            // Reset filter buttons
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                const isAll = btn.dataset.filterValue === 'all';
+                if (isAll) {
+                    btn.classList.add('bg-slate-900', 'text-white');
+                    btn.classList.remove('bg-slate-100', 'text-slate-700');
+                } else {
+                    btn.classList.remove('bg-slate-900', 'text-white');
+                    btn.classList.add('bg-slate-100', 'text-slate-700');
+                }
+            });
+
+            applyFilters();
+        }
+
+        // Modal functions
+        function openModal(appId, slug) {
+            const modal = document.getElementById('app-modal');
+            const modalBody = document.getElementById('modal-body');
+            const modalContent = document.getElementById(`modal-content-${appId}`);
+
+            if (modalContent) {
+                modalBody.innerHTML = modalContent.innerHTML;
+                modal.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+                // Update URL hash for deep linking with descriptive slug.
+                window.location.hash = `${slug}-${appId}`;
+            }
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('app-modal');
+            modal.classList.add('hidden');
+            document.body.style.overflow = 'auto';
+            // Clear URL hash without breaking the URL
+            window.location.hash = '';
+        }
+
+        // Close modal on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // Toggle manual verification details
+        function toggleManualVerification() {
+            const details = document.getElementById('manual-verification-details');
+            const btn = document.getElementById('manual-verify-toggle');
+
+            details.classList.toggle('hidden');
+            btn.textContent = details.classList.contains('hidden') ? 'Show details' : 'Hide details';
+        }
+
+        // Copy to clipboard
+        function copyToClipboard(text, button) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalHTML = button.innerHTML;
+                button.innerHTML = '<svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+                button.classList.add('text-emerald-600');
+                setTimeout(() => {
+                    button.innerHTML = originalHTML;
+                    button.classList.remove('text-emerald-600');
+                }, 1500);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
+        }
+
+        // Toggle YAML
+        function toggleYaml(event, appId) {
+            const btn = event.target;
+            // Check if we're in a modal or in the main page.
+            const modal = document.getElementById('app-modal');
+            const isModalOpen = !modal.classList.contains('hidden');
+
+            let yamlContainer;
+            if (isModalOpen) {
+                // Look for the YAML container within the modal body.
+                yamlContainer = document.querySelector('#modal-body #yaml-' + appId);
+            } else {
+                yamlContainer = document.getElementById(`yaml-${appId}`);
+            }
+
+            if (yamlContainer) {
+                yamlContainer.classList.toggle('hidden');
+                btn.textContent = yamlContainer.classList.contains('hidden') ? 'Show rofl.yaml' : 'Hide rofl.yaml';
+            }
+        }
+
+        // Handle deep linking and reapply filters after apps load
+        document.addEventListener('htmx:afterSwap', function(evt) {
+            if (evt.detail.target.id === 'apps-container') {
+                // Apps have loaded, reapply any active filters
+                applyFilters();
+
+                // Check for deep link hash
+                const hash = window.location.hash;
+                if (hash && hash.length > 1) {
+                    // Extract ID from hash (format: #slug-name-123)
+                    // ID is the last segment after the final hyphen
+                    const hashValue = hash.substring(1); // Remove #
+                    const lastHyphenIndex = hashValue.lastIndexOf('-');
+                    if (lastHyphenIndex !== -1) {
+                        const appId = hashValue.substring(lastHyphenIndex + 1);
+                        const slug = hashValue.substring(0, lastHyphenIndex);
+                        openModal(parseInt(appId), slug);
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>

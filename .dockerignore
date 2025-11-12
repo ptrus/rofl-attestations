@@ -1,0 +1,30 @@
+# Git
+.git
+.gitignore
+
+# Build artifacts
+rofl-registry
+*.db
+*.db-shm
+*.db-wal
+
+# Data directory
+data/
+
+# Documentation
+*.md
+REVIEW.md
+codex_*.md
+
+# Docker
+Dockerfile
+compose.yaml
+.dockerignore
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

@@ -1,0 +1,63 @@
+version: "2"
+linters:
+  default: none
+  enable:
+    - bodyclose
+    - copyloopvar
+    - depguard
+    - errcheck
+    - goconst
+    - gocyclo
+    - goprintffuncname
+    - gosec
+    - govet
+    - ineffassign
+    - misspell
+    - revive
+    - rowserrcheck
+    - staticcheck
+    - unconvert
+    - unused
+
+  exclusions:
+    rules:
+      # Exclude var-naming.
+      - linters:
+          - revive
+        text: var-naming
+
+  settings:
+    depguard:
+      rules:
+        main:
+          files:
+            - $all
+          allow:
+            - $gostd
+            - github.com/ptrus/rofl-attestations
+            - github.com/go-chi/chi/v5
+            - github.com/go-chi/cors
+            - github.com/go-chi/httplog/v3
+            - github.com/knadh/koanf
+            - github.com/mattn/go-sqlite3
+            - github.com/spf13/cobra
+            - gopkg.in/yaml.v3
+            - golang.org/x/sync/errgroup
+            - github.com/ethereum/go-ethereum
+            - github.com/spruceid/siwe-go
+          deny:
+            - pkg: "github.com/pkg/errors"
+              desc: Should be replaced by standard lib errors package
+    gosec:
+      excludes:
+        - G402
+        - G404
+        - G115
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/ptrus/rofl-attestations
