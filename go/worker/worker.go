@@ -262,12 +262,12 @@ func (w *Worker) verifyDeployment(ctx context.Context, app *models.App, deployme
 	// Submit verification request
 	taskID, err := w.submitVerification(ctx, app.GitHubURL, app.GitRef, deploymentName)
 	if err != nil {
-		// Update deployment status to failed
-		updateErr := w.db.UpsertDeployment(ctx, app.ID, deploymentName, "", "failed",
-			fmt.Sprintf("Failed to submit verification: %v", err))
-		if updateErr != nil {
-			w.logger.Error("failed to update deployment status", "error", updateErr)
-		}
+		// Don't overwrite existing results if we couldn't even enqueue the job
+		// This allows previous verification results to remain visible
+		w.logger.Warn("failed to submit verification, keeping existing results",
+			"app_id", app.ID,
+			"deployment", deploymentName,
+			"error", err)
 		return fmt.Errorf("failed to submit verification: %w", err)
 	}
 
@@ -279,12 +279,13 @@ func (w *Worker) verifyDeployment(ctx context.Context, app *models.App, deployme
 	// Poll for results
 	result, err := w.pollResults(ctx, taskID)
 	if err != nil {
-		// Update deployment status to failed
-		updateErr := w.db.UpsertDeployment(ctx, app.ID, deploymentName, "", "failed",
-			fmt.Sprintf("Failed to poll results: %v", err))
-		if updateErr != nil {
-			w.logger.Error("failed to update deployment status", "error", updateErr)
-		}
+		// Don't overwrite existing results if polling failed
+		// This allows previous verification results to remain visible
+		w.logger.Warn("failed to poll results, keeping existing results",
+			"app_id", app.ID,
+			"deployment", deploymentName,
+			"task_id", taskID,
+			"error", err)
 		return fmt.Errorf("failed to poll results: %w", err)
 	}
 
