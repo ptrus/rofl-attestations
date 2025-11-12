@@ -294,20 +294,33 @@ var appCardTemplate = `<!-- App Card: {{.Name}} -->
                 {{end}}
             </div>
             {{end}}
+        {{else if .OtherDeployments}}
+            {{$first := index .OtherDeployments 0}}
+            {{if and (eq $first.Status "verified") $first.EnclaveIDs}}
+            <div class="bg-emerald-50 border border-emerald-200 rounded-md p-3 text-xs mt-3">
+                <div class="font-semibold text-emerald-900 mb-2">{{if eq $first.Name "testnet"}}Testnet{{else}}{{$first.Name}}{{end}} Enclave IDs:</div>
+                <div class="space-y-1">
+                    {{range $first.EnclaveIDs}}
+                    <div class="font-mono text-emerald-800 break-all text-xs">{{.}}</div>
+                    {{end}}
+                </div>
+            </div>
+            {{else}}
+            <div class="bg-slate-50 border border-slate-200 rounded-md p-3 text-xs mt-3">
+                {{if eq $first.Status "pending"}}
+                <div class="text-slate-600 text-center">{{if eq $first.Name "testnet"}}Testnet{{else}}{{$first.Name}}{{end}} verification pending</div>
+                {{else if eq $first.Status "failed"}}
+                <div class="text-red-800 font-semibold mb-1">{{if eq $first.Name "testnet"}}Testnet{{else}}{{$first.Name}}{{end}} verification failed</div>
+                {{if $first.VerificationMsg}}
+                <div class="text-slate-600 text-xs leading-relaxed line-clamp-3">{{$first.VerificationMsg}}</div>
+                {{end}}
+                <div class="text-slate-500 text-xs mt-2 italic">See details for more information</div>
+                {{end}}
+            </div>
+            {{end}}
         {{else}}
         <div class="bg-slate-50 border border-slate-200 rounded-md p-3 text-xs mt-3">
-            {{if eq .Status "pending"}}
-            <div class="text-slate-600 text-center">Verification pending</div>
-            {{else if eq .Status "failed"}}
-            {{$first := index .OtherDeployments 0}}
-            <div class="text-red-800 font-semibold mb-1">{{if eq $first.Name "testnet"}}Testnet{{else}}{{$first.Name}}{{end}} verification failed</div>
-            {{if $first.VerificationMsg}}
-            <div class="text-slate-600 text-xs leading-relaxed line-clamp-3">{{$first.VerificationMsg}}</div>
-            {{end}}
-            <div class="text-slate-500 text-xs mt-2 italic">See details for more information</div>
-            {{else}}
             <div class="text-slate-600 text-center">Not yet verified</div>
-            {{end}}
         </div>
         {{end}}
     </div>
@@ -625,18 +638,22 @@ func (s *Server) renderAppCard(app *models.App, deployments []*models.Deployment
 		manifest = &rofl.Manifest{}
 	}
 
-	// Extract networks from deployments.
+	// Extract networks from deployments in rofl.yaml manifest.
 	// Only support mainnet and testnet - hardcode them.
 	networks := []string{}
 	networkSet := make(map[string]bool)
 
-	// Check if app has mainnet or testnet deployments
-	for _, dep := range deployments {
-		if dep.DeploymentName == "mainnet" && !networkSet["mainnet"] {
+	// Check manifest deployments for mainnet or testnet networks
+	for _, manifestDep := range manifest.Deployments {
+		if manifestDep == nil {
+			continue
+		}
+		// Check the actual network field (e.g., "mainnet", "testnet")
+		if manifestDep.Network == "mainnet" && !networkSet["mainnet"] {
 			networks = append(networks, "mainnet")
 			networkSet["mainnet"] = true
 		}
-		if dep.DeploymentName == "testnet" && !networkSet["testnet"] {
+		if manifestDep.Network == "testnet" && !networkSet["testnet"] {
 			networks = append(networks, "testnet")
 			networkSet["testnet"] = true
 		}
