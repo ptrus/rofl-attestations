@@ -127,6 +127,11 @@ func (w *Worker) Start(ctx context.Context) error {
 			}
 		}
 
+		// Prioritize apps without verified deployments
+		if err := w.sortAppsByVerificationStatus(ctx, apps); err != nil {
+			w.logger.Error("failed to sort apps by verification status", "error", err)
+		}
+
 		w.logger.Info("verifying apps one by one", "count", len(apps))
 
 		// Process each app one at a time
@@ -169,6 +174,47 @@ func (w *Worker) Start(ctx context.Context) error {
 			// Continue to next cycle
 		}
 	}
+}
+
+// sortAppsByVerificationStatus sorts apps to prioritize those without verified deployments.
+// Apps with no verified deployments come first, then apps with verified deployments.
+func (w *Worker) sortAppsByVerificationStatus(ctx context.Context, apps []*models.App) error {
+	// Create a map to store verification status for each app
+	hasVerified := make(map[int64]bool)
+
+	for _, app := range apps {
+		deployments, err := w.db.GetDeploymentsByAppID(ctx, app.ID)
+		if err != nil {
+			w.logger.Warn("failed to get deployments for sorting", "app_id", app.ID, "error", err)
+			continue
+		}
+
+		// Check if any deployment is verified
+		verified := false
+		for _, dep := range deployments {
+			if dep.Status == models.StatusVerified {
+				verified = true
+				break
+			}
+		}
+		hasVerified[app.ID] = verified
+	}
+
+	// Sort apps: unverified first, then verified
+	// Within each group, maintain original order (by ID)
+	for i := 0; i < len(apps); i++ {
+		for j := i + 1; j < len(apps); j++ {
+			iVerified := hasVerified[apps[i].ID]
+			jVerified := hasVerified[apps[j].ID]
+
+			// If i is verified but j is not, swap them
+			if iVerified && !jVerified {
+				apps[i], apps[j] = apps[j], apps[i]
+			}
+		}
+	}
+
+	return nil
 }
 
 // verifyApp verifies a single app by checking all its deployments.
