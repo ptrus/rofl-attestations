@@ -16,6 +16,7 @@ import (
 
 	"github.com/ptrus/rofl-attestations/config"
 	"github.com/ptrus/rofl-attestations/db"
+	"github.com/ptrus/rofl-attestations/worker"
 )
 
 // Server is the API server.
@@ -24,19 +25,38 @@ type Server struct {
 	db           *db.DB
 	logger       *slog.Logger
 	cardTemplate *template.Template
+	authClient   *worker.AuthClient
 }
 
 // New creates a new API server.
-func New(cfg *config.Config, database *db.DB, logger *slog.Logger) *Server {
+func New(cfg *config.Config, database *db.DB, logger *slog.Logger) (*Server, error) {
 	// Parse the app card template once at initialization
 	cardTemplate := template.Must(template.New("app-card").Parse(appCardTemplate))
+
+	// Initialize auth client if configured
+	var authClient *worker.AuthClient
+	if cfg.Worker.PrivateKey != "" {
+		var err error
+		authClient, err = worker.NewAuthClient(
+			cfg.Worker.BackendURL,
+			cfg.Worker.PrivateKey,
+			cfg.Worker.SIWEDomain,
+			cfg.Worker.ChainID,
+			logger,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create auth client: %w", err)
+		}
+		logger.Info("API auth client initialized", "address", authClient.Address().Hex())
+	}
 
 	return &Server{
 		cfg:          cfg,
 		db:           database,
 		logger:       logger,
 		cardTemplate: cardTemplate,
-	}
+		authClient:   authClient,
+	}, nil
 }
 
 // Run starts the HTTP server.
@@ -71,6 +91,10 @@ func (s *Server) Run(ctx context.Context) error {
 
 	r.Get("/htmx/apps", s.handleGetApps)
 	r.Get("/htmx/apps/{id}", s.handleGetApp)
+
+	// Live verification API
+	r.Post("/api/verify", s.handleVerify)
+	r.Get("/api/verify/{task_id}/results", s.handleVerifyResults)
 
 	// Health check.
 	r.Get("/health", func(w http.ResponseWriter, _ *http.Request) {

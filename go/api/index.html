@@ -3,9 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ROFL Attestations - Verified TEE Applications</title>
+    <title>Oasis ROFL App Attestations - Verified TEE Applications</title>
     <script src="https://unpkg.com/htmx.org@2.0.8"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -41,7 +42,7 @@
                             </svg>
                         </div>
                         <h1 class="text-4xl font-bold text-slate-900">
-                            Verified ROFL Applications
+                            Verified Oasis ROFL Apps
                         </h1>
                     </div>
                     <p class="text-slate-600 text-lg max-w-3xl mb-3">
@@ -68,11 +69,6 @@
                         </span>
                     </div>
                 </div>
-                <a href="https://github.com/ptrus/rofl-attestations"
-                   target="_blank"
-                   class="px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-semibold text-sm transition-colors shadow-sm">
-                    Submit App on GitHub →
-                </a>
             </div>
 
             <!-- Stats Bar -->
@@ -143,29 +139,67 @@
             </div>
         </div>
 
-        <!-- Filters -->
-        <div class="bg-white border border-slate-200 rounded-lg p-6 mb-8 shadow-sm">
-            <div class="flex flex-wrap gap-6 mb-4">
-                <div class="flex flex-wrap items-center gap-2">
-                    <label class="text-slate-700 font-semibold text-sm">Status:</label>
-                    <button class="filter-btn px-4 py-2 rounded-lg text-sm font-medium transition-all bg-slate-900 text-white" data-filter-type="status" data-filter-value="all" title="Show all applications">All</button>
-                    <button class="filter-btn px-4 py-2 rounded-lg text-sm font-medium transition-all bg-slate-100 text-slate-700 hover:bg-slate-200" data-filter-type="status" data-filter-value="verified" title="Enclave measurements match on-chain deployments">Verified</button>
-                    <button class="filter-btn px-4 py-2 rounded-lg text-sm font-medium transition-all bg-slate-100 text-slate-700 hover:bg-slate-200" data-filter-type="status" data-filter-value="pending" title="Verification queued or in progress">Pending</button>
-                    <button class="filter-btn px-4 py-2 rounded-lg text-sm font-medium transition-all bg-slate-100 text-slate-700 hover:bg-slate-200" data-filter-type="status" data-filter-value="failed" title="Verification failed or measurements don't match">Failed</button>
-                </div>
-                <div class="flex flex-wrap items-center gap-2">
-                    <label class="text-slate-700 font-semibold text-sm">Network:</label>
-                    <button class="filter-btn px-4 py-2 rounded-lg text-sm font-medium transition-all bg-slate-900 text-white" data-filter-type="network" data-filter-value="all">All</button>
-                    <button class="filter-btn px-4 py-2 rounded-lg text-sm font-medium transition-all bg-slate-100 text-slate-700 hover:bg-slate-200" data-filter-type="network" data-filter-value="mainnet">Mainnet</button>
-                    <button class="filter-btn px-4 py-2 rounded-lg text-sm font-medium transition-all bg-slate-100 text-slate-700 hover:bg-slate-200" data-filter-type="network" data-filter-value="testnet">Testnet</button>
-                </div>
+        <!-- Live Verification Box -->
+        <div class="bg-white border-2 border-blue-300 rounded-xl p-8 mb-12 shadow-lg">
+            <div class="flex items-center gap-3 mb-4">
+                <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+                <h2 class="text-2xl font-bold text-slate-900">Verify Any Oasis ROFL App</h2>
             </div>
-            <div class="flex flex-wrap gap-4 items-center">
-                <input type="text"
-                       placeholder="Search applications..."
-                       id="search-input"
-                       class="flex-1 min-w-[250px] px-4 py-2 bg-slate-50 border border-slate-300 rounded-lg text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-transparent transition-all">
-            </div>
+            <p class="text-slate-600 mb-4 leading-relaxed">
+                Paste a GitHub repository URL to instantly verify any Oasis ROFL application. We'll build it from source and compare the measurements to on-chain deployments.
+            </p>
+            <form id="verify-form" class="space-y-3">
+                <div class="flex gap-2">
+                    <input type="url"
+                           id="github-url-input"
+                           placeholder="https://github.com/username/repo"
+                           required
+                           pattern="https://github\.com/[^/]+/[^/]+"
+                           class="flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-md text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm">
+                    <select id="git-ref-select"
+                            onchange="handleRefChange()"
+                            class="w-32 px-3 py-2 bg-slate-50 border border-slate-300 rounded-md text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm">
+                        <option value="auto">Auto (main/master)</option>
+                        <option value="main">main</option>
+                        <option value="master">master</option>
+                        <option value="custom">Custom...</option>
+                    </select>
+                    <input type="text"
+                           id="git-ref-custom-input"
+                           placeholder="branch name"
+                           class="hidden w-32 px-3 py-2 bg-slate-50 border border-slate-300 rounded-md text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm">
+                    <button type="button"
+                            id="fetch-btn"
+                            onclick="fetchRoflYaml()"
+                            class="px-4 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-md font-semibold text-sm transition-colors whitespace-nowrap">
+                        Load App
+                    </button>
+                </div>
+                <div id="deployment-selector" class="hidden bg-slate-50 border border-slate-300 rounded-md p-3">
+                    <label class="block text-xs font-semibold text-slate-700 mb-2">Select Deployment:</label>
+                    <div class="flex gap-2">
+                        <select id="deployment-select" class="flex-1 px-3 py-2 bg-white border border-slate-300 rounded-md text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
+                            <option value="">-- Select a deployment --</option>
+                        </select>
+                        <button type="submit"
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md font-semibold text-sm transition-colors whitespace-nowrap">
+                            Verify
+                        </button>
+                    </div>
+                </div>
+                <div id="verify-status" class="hidden text-sm"></div>
+                <div id="verify-result" class="hidden mt-4"></div>
+            </form>
+        </div>
+
+        <!-- Directory Section Header -->
+        <div class="mb-6">
+            <h2 class="text-3xl font-bold text-slate-900 mb-3">Trusted App Directory</h2>
+            <p class="text-slate-600 leading-relaxed">
+                These applications are continuously monitored and verified. Add your app to this directory via <a href="https://github.com/ptrus/rofl-attestations" target="_blank" class="text-blue-600 hover:text-blue-800 underline font-semibold">GitHub</a>.
+            </p>
         </div>
 
         <!-- Apps Grid -->
@@ -177,18 +211,6 @@
             <div class="col-span-full text-center py-12 text-slate-500">
                 <div class="animate-pulse">Loading applications...</div>
             </div>
-        </div>
-
-        <!-- Empty State (when no results) -->
-        <div id="empty-state" class="hidden col-span-full text-center py-16">
-            <svg class="w-16 h-16 mx-auto text-slate-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-            </svg>
-            <h3 class="text-lg font-semibold text-slate-700 mb-2">No applications found</h3>
-            <p class="text-slate-500 text-sm mb-4">Try adjusting your filters or search query</p>
-            <button onclick="resetFilters()" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg font-semibold text-sm transition-colors">
-                Reset Filters
-            </button>
         </div>
     </div>
 
@@ -214,94 +236,420 @@
     </div>
 
     <script>
-        // Filter functionality
-        const filters = {
-            status: 'all',
-            network: 'all',
-            search: ''
-        };
+        let roflYamlData = null;
 
-        document.querySelectorAll('.filter-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const filterType = this.dataset.filterType;
-                const filterValue = this.dataset.filterValue;
+        // Handle ref selection change
+        function handleRefChange() {
+            const refSelect = document.getElementById('git-ref-select');
+            const customInput = document.getElementById('git-ref-custom-input');
 
-                // Update active state
-                const group = this.closest('div').querySelectorAll(`[data-filter-type="${filterType}"]`);
-                group.forEach(b => {
-                    b.classList.remove('bg-slate-900', 'text-white');
-                    b.classList.add('bg-slate-100', 'text-slate-700');
-                });
-                this.classList.remove('bg-slate-100', 'text-slate-700');
-                this.classList.add('bg-slate-900', 'text-white');
-
-                // Update filter
-                filters[filterType] = filterValue;
-                applyFilters();
-            });
-        });
-
-        document.getElementById('search-input').addEventListener('input', function(e) {
-            filters.search = e.target.value.toLowerCase();
-            applyFilters();
-        });
-
-        function applyFilters() {
-            const cards = document.querySelectorAll('.app-card');
-            const emptyState = document.getElementById('empty-state');
-            let visibleCount = 0;
-
-            cards.forEach(card => {
-                const status = card.dataset.status;
-                const networks = card.dataset.networks ? card.dataset.networks.split(',') : [];
-                const name = card.dataset.name ? card.dataset.name.toLowerCase() : '';
-
-                let show = true;
-
-                if (filters.status !== 'all' && status !== filters.status) {
-                    show = false;
-                }
-
-                if (filters.network !== 'all' && !networks.includes(filters.network)) {
-                    show = false;
-                }
-
-                if (filters.search && !name.includes(filters.search)) {
-                    show = false;
-                }
-
-                card.style.display = show ? 'block' : 'none';
-                if (show) visibleCount++;
-            });
-
-            // Show empty state if no cards are visible
-            if (emptyState) {
-                emptyState.style.display = visibleCount === 0 ? 'block' : 'none';
+            if (refSelect.value === 'custom') {
+                refSelect.classList.add('hidden');
+                customInput.classList.remove('hidden');
+                customInput.focus();
             }
         }
 
-        function resetFilters() {
-            // Reset filter state
-            filters.status = 'all';
-            filters.network = 'all';
-            filters.search = '';
-
-            // Reset UI
-            document.getElementById('search-input').value = '';
-
-            // Reset filter buttons
-            document.querySelectorAll('.filter-btn').forEach(btn => {
-                const isAll = btn.dataset.filterValue === 'all';
-                if (isAll) {
-                    btn.classList.add('bg-slate-900', 'text-white');
-                    btn.classList.remove('bg-slate-100', 'text-slate-700');
-                } else {
-                    btn.classList.remove('bg-slate-900', 'text-white');
-                    btn.classList.add('bg-slate-100', 'text-slate-700');
+        // Allow going back from custom input
+        document.addEventListener('DOMContentLoaded', function() {
+            const customInput = document.getElementById('git-ref-custom-input');
+            customInput.addEventListener('blur', function() {
+                // If empty, go back to dropdown
+                if (!this.value.trim()) {
+                    const refSelect = document.getElementById('git-ref-select');
+                    refSelect.value = 'auto';
+                    refSelect.classList.remove('hidden');
+                    this.classList.add('hidden');
                 }
             });
 
-            applyFilters();
+            // Add escape key to cancel
+            customInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    const refSelect = document.getElementById('git-ref-select');
+                    refSelect.value = 'auto';
+                    refSelect.classList.remove('hidden');
+                    this.classList.add('hidden');
+                    this.value = '';
+                }
+            });
+        });
+
+        // Get the current git ref value
+        function getCurrentGitRef() {
+            const refSelect = document.getElementById('git-ref-select');
+            const customInput = document.getElementById('git-ref-custom-input');
+
+            if (refSelect.value === 'custom') {
+                return customInput.value.trim() || 'main';
+            } else if (refSelect.value === 'auto') {
+                return 'auto';
+            } else {
+                return refSelect.value;
+            }
+        }
+
+        // Fetch rofl.yaml from GitHub
+        async function fetchRoflYaml() {
+            const urlInput = document.getElementById('github-url-input');
+            const statusDiv = document.getElementById('verify-status');
+            const deploymentSelector = document.getElementById('deployment-selector');
+            const deploymentSelect = document.getElementById('deployment-select');
+            const fetchBtn = document.getElementById('fetch-btn');
+
+            const githubUrl = urlInput.value.trim();
+            let gitRef = getCurrentGitRef();
+
+            if (!githubUrl || !githubUrl.match(/https:\/\/github\.com\/[^/]+\/[^/]+/)) {
+                statusDiv.className = 'text-sm text-red-600';
+                statusDiv.textContent = 'Please enter a valid GitHub repository URL';
+                statusDiv.classList.remove('hidden');
+                return;
+            }
+
+            // Extract owner/repo from URL
+            const match = githubUrl.match(/https:\/\/github\.com\/([^/]+)\/([^/]+)/);
+            if (!match) return;
+
+            const owner = match[1];
+            const repo = match[2].replace(/\.git$/, '');
+
+            // Reset state
+            statusDiv.className = 'text-sm text-slate-600';
+            statusDiv.textContent = 'Fetching rofl.yaml...';
+            statusDiv.classList.remove('hidden');
+            deploymentSelector.classList.add('hidden');
+            fetchBtn.disabled = true;
+
+            try {
+                let rawUrl, response;
+
+                // Handle auto mode - check which branch is more active
+                if (gitRef === 'auto') {
+                    statusDiv.textContent = 'Detecting most recent branch...';
+
+                    // Fetch GitHub API to check both branches
+                    const [mainInfo, masterInfo] = await Promise.all([
+                        fetch(`https://api.github.com/repos/${owner}/${repo}/branches/main`).then(r => r.ok ? r.json() : null),
+                        fetch(`https://api.github.com/repos/${owner}/${repo}/branches/master`).then(r => r.ok ? r.json() : null)
+                    ]);
+
+                    // Determine which branch to use based on existence and recent commits
+                    let selectedBranch = 'main'; // default
+
+                    if (mainInfo && masterInfo) {
+                        // Both exist, pick the one with more recent commit
+                        const mainDate = new Date(mainInfo.commit.commit.committer.date);
+                        const masterDate = new Date(masterInfo.commit.commit.committer.date);
+                        selectedBranch = mainDate > masterDate ? 'main' : 'master';
+                        statusDiv.textContent = `Using ${selectedBranch} branch (more recent commits)...`;
+                    } else if (masterInfo && !mainInfo) {
+                        selectedBranch = 'master';
+                        statusDiv.textContent = 'Using master branch...';
+                    } else {
+                        statusDiv.textContent = 'Using main branch...';
+                    }
+
+                    gitRef = selectedBranch;
+                    rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${gitRef}/rofl.yaml`;
+                    response = await fetch(rawUrl);
+                } else {
+                    // Try the specific ref
+                    statusDiv.textContent = `Fetching from ${gitRef} branch...`;
+                    rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${gitRef}/rofl.yaml`;
+                    response = await fetch(rawUrl);
+                }
+
+                if (!response.ok) {
+                    throw new Error(`rofl.yaml not found in repository at ref '${gitRef}'. Make sure the file exists at the root of the branch.`);
+                }
+
+                // Store the detected git ref for form submission
+                detectedGitRef = gitRef;
+
+                // Update the dropdown to show the detected branch
+                const refSelect = document.getElementById('git-ref-select');
+                const customInput = document.getElementById('git-ref-custom-input');
+
+                if (refSelect.value === 'auto' || customInput.classList.contains('hidden')) {
+                    // Only update if we're in auto mode or using dropdown
+                    if (gitRef === 'main' || gitRef === 'master') {
+                        refSelect.value = gitRef;
+                    } else {
+                        // Custom branch detected, show in custom input
+                        refSelect.value = 'custom';
+                        refSelect.classList.add('hidden');
+                        customInput.classList.remove('hidden');
+                        customInput.value = gitRef;
+                    }
+                }
+
+                const yamlText = await response.text();
+
+                // Parse YAML (simple parser for deployments)
+                roflYamlData = parseRoflYaml(yamlText);
+
+                console.log('Parsed ROFL YAML:', roflYamlData);
+
+                if (!roflYamlData.deployments || roflYamlData.deployments.length === 0) {
+                    throw new Error('No deployments found in rofl.yaml');
+                }
+
+                // Populate deployment selector
+                deploymentSelect.innerHTML = '<option value="">-- Select a deployment --</option>';
+                roflYamlData.deployments.forEach(dep => {
+                    const option = document.createElement('option');
+                    option.value = dep.name;
+                    option.textContent = `${dep.name} (${dep.network || 'unknown network'})`;
+                    deploymentSelect.appendChild(option);
+                });
+
+                statusDiv.className = 'text-sm text-emerald-600';
+                statusDiv.textContent = `✓ Found ${roflYamlData.deployments.length} deployment(s). Select one to verify.`;
+                deploymentSelector.classList.remove('hidden');
+
+            } catch (error) {
+                statusDiv.className = 'text-sm text-red-600';
+                statusDiv.textContent = `Error: ${error.message}`;
+            } finally {
+                fetchBtn.disabled = false;
+            }
+        }
+
+        // Parse YAML using js-yaml library to extract deployments and enclave identities
+        function parseRoflYaml(yamlText) {
+            try {
+                const data = jsyaml.load(yamlText);
+                const deployments = [];
+
+                if (data.deployments) {
+                    for (const [name, config] of Object.entries(data.deployments)) {
+                        const deployment = {
+                            name: name,
+                            network: config.network || 'unknown',
+                            enclaveIdentities: []
+                        };
+
+                        // Extract enclave IDs from policy.enclaves
+                        if (config.policy && config.policy.enclaves) {
+                            deployment.enclaveIdentities = config.policy.enclaves
+                                .map(e => e.id)
+                                .filter(id => id);
+                        }
+
+                        deployments.push(deployment);
+                    }
+                }
+
+                return { deployments };
+            } catch (error) {
+                console.error('Failed to parse YAML:', error);
+                throw new Error('Invalid rofl.yaml format');
+            }
+        }
+
+        // Store the detected git ref after fetching
+        let detectedGitRef = null;
+
+        // Live verification functionality
+        document.getElementById('verify-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const urlInput = document.getElementById('github-url-input');
+            const deploymentSelect = document.getElementById('deployment-select');
+            const statusDiv = document.getElementById('verify-status');
+            const resultDiv = document.getElementById('verify-result');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
+
+            const githubUrl = urlInput.value.trim();
+            const gitRef = detectedGitRef || getCurrentGitRef();
+            const deploymentName = deploymentSelect.value;
+
+            if (!deploymentName) {
+                statusDiv.className = 'text-sm text-red-600';
+                statusDiv.textContent = 'Please select a deployment';
+                statusDiv.classList.remove('hidden');
+                return;
+            }
+
+            // Reset state
+            statusDiv.className = 'text-sm text-slate-600';
+            statusDiv.innerHTML = 'Submitting verification request...';
+            statusDiv.classList.remove('hidden');
+            resultDiv.classList.add('hidden');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Verifying...';
+
+            try {
+                // Submit verification request
+                const response = await fetch('/api/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        github_url: githubUrl,
+                        git_ref: gitRef,
+                        deployment_name: deploymentName
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${await response.text()}`);
+                }
+
+                const data = await response.json();
+
+                // Poll for results
+                statusDiv.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <svg class="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Verification in progress... (~30 seconds)</span>
+                    </div>
+                `;
+
+                const result = await pollVerificationResults(data.task_id);
+
+                // Show results
+                displayVerificationResult(result);
+                statusDiv.classList.add('hidden');
+
+            } catch (error) {
+                statusDiv.className = 'text-sm text-red-600';
+                statusDiv.textContent = `Error: ${error.message}`;
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Verify Deployment';
+            }
+        });
+
+        async function pollVerificationResults(taskId) {
+            const maxAttempts = 200; // 10 minutes max
+            const pollInterval = 3000; // 3 seconds
+
+            for (let i = 0; i < maxAttempts; i++) {
+                await new Promise(resolve => setTimeout(resolve, pollInterval));
+
+                const response = await fetch(`/api/verify/${taskId}/results`);
+
+                if (response.status === 202) {
+                    // Still in progress, continue polling
+                    continue;
+                }
+
+                if (!response.ok) {
+                    throw new Error(`Failed to check status: HTTP ${response.status}`);
+                }
+
+                // Got results (HTTP 200)
+                return await response.json();
+            }
+
+            throw new Error('Verification timeout - please try again later');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function displayVerificationResult(result) {
+            const resultDiv = document.getElementById('verify-result');
+
+            // Get enclave identities from the selected deployment
+            const deploymentSelect = document.getElementById('deployment-select');
+            const selectedDeploymentName = deploymentSelect.value;
+            const selectedDeployment = roflYamlData?.deployments?.find(d => d.name === selectedDeploymentName);
+            const enclaveIdentities = selectedDeployment?.enclaveIdentities || [];
+
+            console.log('Selected deployment:', selectedDeploymentName);
+            console.log('Selected deployment data:', selectedDeployment);
+            console.log('Enclave identities:', enclaveIdentities);
+
+            // Build result HTML
+            let html = '<div class="border-2 rounded-lg p-6">';
+
+            if (result.verified) {
+                html += '<div class="flex items-center gap-3 mb-4">';
+                html += '<svg class="w-8 h-8 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">';
+                html += '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+                html += '</svg>';
+                html += '<h3 class="text-2xl font-bold text-emerald-900">Verification Successful!</h3>';
+                html += '</div>';
+                html += '<div class="bg-emerald-50 border border-emerald-200 rounded-lg p-4">';
+                html += '<p class="text-emerald-800 font-semibold mb-2">Built enclave identities MATCH on-chain measurements</p>';
+
+                // Display matching enclave IDs
+                if (enclaveIdentities.length > 0) {
+                    html += '<div class="mt-3 space-y-2">';
+                    enclaveIdentities.forEach(id => {
+                        html += `<div class="flex items-center gap-2 text-sm">`;
+                        html += '<svg class="w-4 h-4 text-emerald-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">';
+                        html += '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+                        html += '</svg>';
+                        html += `<code class="font-mono text-xs text-emerald-900 break-all">${id}</code>`;
+                        html += '</div>';
+                    });
+                    html += '</div>';
+                }
+                html += '</div>';
+            } else {
+                html += '<div class="flex items-center gap-3 mb-4">';
+                html += '<svg class="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">';
+                html += '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path>';
+                html += '</svg>';
+                html += '<h3 class="text-2xl font-bold text-red-900">Verification Failed</h3>';
+                html += '</div>';
+                html += '<div class="bg-red-50 border border-red-200 rounded-lg p-4">';
+                html += '<p class="text-red-800 font-semibold mb-2">Enclave measurements do NOT match on-chain deployments</p>';
+
+                // Display mismatched enclave IDs
+                if (enclaveIdentities.length > 0) {
+                    html += '<div class="mt-3 space-y-2">';
+                    enclaveIdentities.forEach(id => {
+                        html += `<div class="flex items-center gap-2 text-sm">`;
+                        html += '<svg class="w-4 h-4 text-red-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">';
+                        html += '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>';
+                        html += '</svg>';
+                        html += `<code class="font-mono text-xs text-red-900 break-all">${id}</code>`;
+                        html += '</div>';
+                    });
+                    html += '</div>';
+                }
+
+                // Display error details if available
+                if (result.stdout || result.stderr) {
+                    html += '<div class="mt-4 space-y-2">';
+                    if (result.stdout) {
+                        html += '<div class="bg-slate-100 border border-slate-300 rounded p-3">';
+                        html += '<p class="text-xs font-semibold text-slate-700 mb-1">Build Output:</p>';
+                        html += `<pre class="text-xs text-slate-800 whitespace-pre-wrap font-mono">${escapeHtml(result.stdout)}</pre>`;
+                        html += '</div>';
+                    }
+                    if (result.stderr) {
+                        html += '<div class="bg-red-100 border border-red-300 rounded p-3">';
+                        html += '<p class="text-xs font-semibold text-red-700 mb-1">Error Output:</p>';
+                        html += `<pre class="text-xs text-red-800 whitespace-pre-wrap font-mono">${escapeHtml(result.stderr)}</pre>`;
+                        html += '</div>';
+                    }
+                    html += '</div>';
+                }
+                html += '</div>';
+            }
+
+            if (result.commit_sha) {
+                html += '<div class="mt-4 text-sm text-slate-600">';
+                html += '<span class="font-semibold">Verified Commit:</span> ';
+                html += `<span class="font-mono">${result.commit_sha}</span>`;
+                html += '</div>';
+            }
+
+            html += '</div>';
+
+            resultDiv.innerHTML = html;
+            resultDiv.classList.remove('hidden');
         }
 
         // Modal functions
@@ -379,12 +727,9 @@
             }
         }
 
-        // Handle deep linking and reapply filters after apps load
+        // Handle deep linking after apps load
         document.addEventListener('htmx:afterSwap', function(evt) {
             if (evt.detail.target.id === 'apps-container') {
-                // Apps have loaded, reapply any active filters
-                applyFilters();
-
                 // Check for deep link hash
                 const hash = window.location.hash;
                 if (hash && hash.length > 1) {

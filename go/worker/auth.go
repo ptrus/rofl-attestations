@@ -57,6 +57,11 @@ func NewAuthClient(backendURL, privateKeyHex, siweDomain string, chainID int, lo
 	}, nil
 }
 
+// Address returns the Ethereum address of the auth client.
+func (a *AuthClient) Address() common.Address {
+	return a.address
+}
+
 // GetToken returns a valid JWT token, refreshing if necessary.
 func (a *AuthClient) GetToken(ctx context.Context) (string, error) {
 	a.mu.RLock()

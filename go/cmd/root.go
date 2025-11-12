@@ -123,7 +123,10 @@ func run(_ *cobra.Command, _ []string) error {
 	}
 
 	// Create API server.
-	server := api.New(cfg, database, logger)
+	server, err := api.New(cfg, database, logger)
+	if err != nil {
+		return fmt.Errorf("failed to create API server: %w", err)
+	}
 
 	// Create verification worker.
 	verificationWorker, err := worker.New(&cfg.Worker, database, logger)
